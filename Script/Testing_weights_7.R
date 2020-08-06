@@ -45,7 +45,7 @@ library(xlsx)
 library(readxl)
 library(data.table)
 library(survey)
-
+library(purrr)
 
 
 
@@ -77,7 +77,7 @@ read_rename_BRFSS <- compose(
 
 #Loading ACBS and BRFSS file paths
 
-path <- "C:/Users/Raed Dell/Documents/R projects/TTI-AsthmaIR/Input"
+path <- "C:\\Users\\Raed\\Documents\\R projects\\TTI-Astham-CI\\Input"
 
 files_ACBS <- list.files(path=path ,pattern = ".sav",full.names=TRUE)
 files_BRFSS <- list.files(path=path ,pattern = ".XPT",full.names=TRUE)
@@ -302,9 +302,10 @@ IR_year_new_print <- IR_year_new %>%
 #IR_old <- svyratio(~ new_case ,  denominator = ~at_risk, ashtm_design, na.rm = TRUE, vartype = c("se", "ci")) 
 IR_new <- svyratio(~ new_case ,  denominator = ~at_risk, ashtm_design_new, na.rm = TRUE, vartype = c("se", "ci")) 
 
-low <- round((IR_new$ratio - IR_new$var*1.96)*1000, 2)
-up <- round((IR_new$ratio + IR_new$var*1.96)*1000, 2)
-paste0(round(IR_new$ratio*1000, 1), "(",low, "-", up, ")" )
+IR_new_low <- round((IR_new$ratio - IR_new$var*1.96)*1000, 6)
+IR_new_up <- round((IR_new$ratio + IR_new$var*1.96)*1000, 6)
+
+IR_new_ci <- paste0(round(IR_new$ratio*1000, 6), "(",IR_new_low, "-", IR_new_up, ")" )
 
 
 #National average By year and state
@@ -323,7 +324,7 @@ IR_state_year_new_print <- IR_state_year_new %>%
 
 # Prevelance --------------------------------------------------------------
 
-
+#Svy design PR
 t<- BRFSS %>% 
   mutate(asthma = if_else(CASTHDX2 ==1, 1, 0),
          sample = if_else(CASTHDX2 ==1 | CASTHDX2 ==2, 1, 0))
@@ -331,6 +332,8 @@ t<- BRFSS %>%
 BRFSS_design <- svydesign(id = ~ PSU, strata = ~ STSTR, weights = ~ X_CHILDWT,   nest = TRUE, data = t) # Original weights
 
 
+
+# PR by state
 PR_state_new_r <- svyby(~ asthma , ~FIPS , denominator = ~sample,  BRFSS_design, na.rm = TRUE, svyratio, vartype = c("se", "ci")) 
 
 PR_state_new_r_print <- PR_state_new_r %>% 
@@ -345,6 +348,8 @@ PR_state_new_r_print <- PR_state_new_r %>%
   select(FIPS, State, PR , SE , Relative_SE, Relative_SE_i, CI_lower, CI_upper, copy)
 
 
+
+# PR by year
 
 PR_year_new_r <- svyby(~ asthma , ~year , denominator = ~sample,  BRFSS_design, na.rm = TRUE, svyratio, vartype = c("se", "ci")) 
 
@@ -361,16 +366,22 @@ mutate(PR = round(`asthma/sample`*100, 1),
 
 
 
+# PR National average
 PR_new <- svyratio(~ asthma ,  denominator = ~sample, BRFSS_design, na.rm = TRUE, vartype = c("se", "ci")) 
 
-low <- round((PR_new$ratio - PR_new$var*1.96)*100, 1)
-up <- round((PR_new$ratio + PR_new$var*1.96)*100, 1)
-paste0(round(PR_new$ratio*100, 1), "(",low, "-", up, ")" )
+PR_new_low <- round((PR_new$ratio - PR_new$var*1.96)*100, 6)
+PR_new_up <- round((PR_new$ratio + PR_new$var*1.96)*100, 6)
+
+PR_new_ci <- paste0(round(PR_new$ratio*100, 6), "(",PR_new_low, "-", PR_new_up, ")" )
+
+
 
 # Writing results to excel ------------------------------------------------
 
+IR_new_ci
+PR_new_ci
 
-IR_new
+PR_new
 IR_year_new_print
 IR_state_new_print
 IR_state_year_new_print

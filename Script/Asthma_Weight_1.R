@@ -18,13 +18,13 @@ search()
 getwd()
 
 
-# 
-# Java issues
+
+#Java issues
 # Sys.getenv("JAVA_HOME")
 # if (Sys.getenv("JAVA_HOME")!="")+Sys.setenv(JAVA_HOME="")
 
-
-
+# 
+# 
 # # installing packages
 # install.packages("Deducer")
 # install.packages("rJava")
@@ -58,7 +58,7 @@ FIPS$FIPS <- as.double(FIPS$FIPS) #To be used to add FIPS code and state names t
 
 
 # Loading file paths for ACBS and BRFSS
-path <- "C:/Users/Raed Dell/Documents/R projects/TTI-AsthmaIR/Input"
+path <- "C:\\Users\\Raed\\Documents\\R projects\\TTI-Astham-CI\\Input"
 
 files_ACBS <- list.files(path=path ,pattern = ".sav",full.names=TRUE)
 files_BRFSS <- list.files(path=path ,pattern = ".XPT",full.names=TRUE)
@@ -317,7 +317,7 @@ IR_filter <- IR %>%
 
 IR_meta <- metagen( TE = IR_filter$IR, 
                     lower = IR_filter$IR_lower, 
-                    upper = IR_filter$IR_upper , studlab = IR_filter$State, overall = T,
+                    upper = IR_filter$IR_upper , studlab = IR_filter$State, #overall = T,
                     comb.fixed = F) 
 
 # forest plot
@@ -342,7 +342,7 @@ PR_filter <- IR %>%
 
 PR_meta <- metagen( TE = PR_filter$PR, 
                     lower = PR_filter$PR_lower, 
-                    upper = PR_filter$PR_upper , studlab = PR_filter$State, overall = T,
+                    upper = PR_filter$PR_upper , studlab = PR_filter$State, #overall = T,
                     comb.fixed = F) 
 
 
@@ -370,16 +370,25 @@ PR_impute <- data.frame(PR = PR_meta$TE.random, PR_low = PR_meta$lower.predict, 
 
 
 #Inserting random effect value and prediction interval and for missing counties
+# 
+# # Code using random effect model for missing states
+# Asthma_rate <- IR %>% 
+#   mutate(IR = if_else(is.na(IR)|IR==Inf, IR_impute$IR, IR),
+#          IR_lower = if_else(is.na(IR_lower)|IR_lower==Inf, IR_impute$IR_low, IR_lower),
+#          IR_upper = if_else(is.na(IR_upper)|IR_upper==Inf, IR_impute$IR_high, IR_upper),
+#          PR = if_else(is.na(PR)|PR==Inf, PR_impute$PR, PR),
+#          PR_lower = if_else(is.na(PR_lower)|PR_lower==Inf, PR_impute$PR_low, PR_lower),
+#          PR_upper = if_else(is.na(PR_upper)|PR_upper==Inf, PR_impute$PR_high, PR_upper),) 
 
+
+# code using national average for missing states
 Asthma_rate <- IR %>% 
-  mutate(IR = if_else(is.na(IR)|IR==Inf, IR_impute$IR, IR),
-         IR_lower = if_else(is.na(IR_lower)|IR_lower==Inf, IR_impute$IR_low, IR_lower),
-         IR_upper = if_else(is.na(IR_upper)|IR_upper==Inf, IR_impute$IR_high, IR_upper),
-         PR = if_else(is.na(PR)|PR==Inf, PR_impute$PR, PR),
-         PR_lower = if_else(is.na(PR_lower)|PR_lower==Inf, PR_impute$PR_low, PR_lower),
-         PR_upper = if_else(is.na(PR_upper)|PR_upper==Inf, PR_impute$PR_high, PR_upper),) 
-
-
+  mutate(IR = if_else(is.na(IR)|IR==Inf, 11.648097, IR),
+         IR_lower = if_else(is.na(IR_lower)|IR_lower==Inf, 11.648097, IR_lower),
+         IR_upper = if_else(is.na(IR_upper)|IR_upper==Inf, 11.64976, IR_upper),
+         PR = if_else(is.na(PR)|PR==Inf, 13.13306, PR),
+         PR_lower = if_else(is.na(PR_lower)|PR_lower==Inf, 13.13278, PR_lower),
+         PR_upper = if_else(is.na(PR_upper)|PR_upper==Inf, 13.13334, PR_upper),) 
 
 
 
