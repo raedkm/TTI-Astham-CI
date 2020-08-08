@@ -5,7 +5,7 @@
 #Part : (T-01) Creating new weigths 
 #Created by Raed Alotaibi
 #Date Created: April-24-2020
-#Last modified: April-24-2020
+#Last modified: Aug-24-2020
 #---------------------------------------------#
 
 Sys.time()
@@ -233,57 +233,31 @@ join_asthm_new %>%
 options(survey.lonely.psu = "adjust")
 
 
-ashtm_design <- svydesign(id = ~ PSU, strata = ~ STSTR, weights = ~ weight,   nest = TRUE, data = join_asthm) # Original weights
 ashtm_design_new <- svydesign(id = ~ PSU, strata = ~ STSTR, weights = ~ new_weight,   nest = TRUE, data = join_asthm) # New weights
 
 
 # Running survey function -------------------------------------------------
 
 #By state
-#IR_state_old <- svyby(~ new_case, ~FIPS ,  denominator = ~at_risk, ashtm_design, na.rm = TRUE, svyratio, vartype = c("se", "ci")) 
-
-
-# IR_state_old_print <- IR_state_old %>% 
-#   mutate(IR = round(`new_case/at_risk`*1000, 1),
-#          SE = round(`se.new_case/at_risk`*1000, 1),
-#          Relative_SE = paste0(round(`se.new_case/at_risk`/`new_case/at_risk`*100, 0), "%"),
-#          Relative_SE_i = if_else(SE/IR*100 >30, "High", "Low"),
-#          CI_lower = round(ci_l, 4)*1000,
-#          CI_upper = round(ci_u, 4)*1000,
-#          copy = paste0(IR, "(", CI_lower, "-", CI_upper, ")")) %>%
-#   left_join(FIPS, by = "FIPS")  %>% 
-#   select(FIPS, State, IR , SE , Relative_SE, Relative_SE_i, CI_lower, CI_upper, copy)  
-
 
 IR_state_new <- svyby(~ new_case, ~FIPS ,  denominator = ~at_risk, ashtm_design_new, na.rm = TRUE, svyratio, vartype = c("se", "ci")) 
 
 
 IR_state_new_print <- IR_state_new %>% 
-  mutate(IR = round(`new_case/at_risk`*1000, 1),
-         SE = round(`se.new_case/at_risk`*1000, 1),
+  mutate(IR = round(`new_case/at_risk`*1000, 6),
+         SE = round(`se.new_case/at_risk`*1000, 6),
          Relative_SE = paste0(round(`se.new_case/at_risk`/`new_case/at_risk`*100, 0), "%"),
          Relative_SE_i = if_else(SE/IR*100 >30, "High", "Low"),
-         CI_lower = round(ci_l, 4)*1000,
-         CI_upper = round(ci_u, 4)*1000, 
+         CI_lower = round(ci_l, 6)*1000,
+         CI_upper = round(ci_u, 6)*1000, 
          copy = paste0(IR, "(", CI_lower, "-", CI_upper, ")")) %>%
   left_join(FIPS, by = "FIPS")  %>% 
   select(FIPS, State, IR , SE , Relative_SE, Relative_SE_i, CI_lower, CI_upper, copy)  
 
 
-#National average By year
-#IR_year_old <- svyby(~ new_case, ~year ,  denominator = ~at_risk, ashtm_design, na.rm = TRUE, svyratio, vartype = c("se", "ci")) 
 
 
-# IR_year_old_print <- IR_year_old %>% 
-#   mutate(IR = round(`new_case/at_risk`*1000, 1),
-#          SE = round(`se.new_case/at_risk`*1000, 1),
-#          Relative_SE = paste0(round(`se.new_case/at_risk`/`new_case/at_risk`*100, 0), "%"),
-#          Relative_SE_i = if_else(SE/IR*100 >30, "High", "Low"),
-#          CI_lower = round(ci_l, 4)*1000,
-#          CI_upper = round(ci_u, 4)*1000,
-#          copy = paste0(IR, "(", CI_lower, "-", CI_upper, ")")) %>%
-#   select(year, IR , SE , Relative_SE, Relative_SE_i, CI_lower, CI_upper, copy)  
-
+# By year
 
 IR_year_new <- svyby(~ new_case, ~year ,  denominator = ~at_risk, ashtm_design_new, na.rm = TRUE, svyratio, vartype = c("se", "ci")) 
 
@@ -299,7 +273,6 @@ IR_year_new_print <- IR_year_new %>%
 
 
 #Natioanl average (by states using weighted IR (i.e. weighted_state_IR = IR / k years of available data))
-#IR_old <- svyratio(~ new_case ,  denominator = ~at_risk, ashtm_design, na.rm = TRUE, vartype = c("se", "ci")) 
 IR_new <- svyratio(~ new_case ,  denominator = ~at_risk, ashtm_design_new, na.rm = TRUE, vartype = c("se", "ci")) 
 
 IR_new_low <- round((IR_new$ratio - IR_new$var*1.96)*1000, 6)
@@ -325,7 +298,7 @@ IR_state_year_new_print <- IR_state_year_new %>%
 # Prevelance --------------------------------------------------------------
 
 #Svy design PR
-t<- BRFSS %>% 
+t <- BRFSS %>% 
   mutate(asthma = if_else(CASTHDX2 ==1, 1, 0),
          sample = if_else(CASTHDX2 ==1 | CASTHDX2 ==2, 1, 0))
 
@@ -388,10 +361,54 @@ IR_state_year_new_print
 PR_state_new_r_print
 PR_year_new_r_print
 
+write.xlsx(IR_new_ci, "Output/Tables/IR_state_se.xlsx", showNA=F, append = T, row.names = F)
+write.xlsx(IR_state_old_print, "Output/Tables/IR_state_se.xlsx", showNA=F, append = T, row.names = F)
+
 write.xlsx(IR_state_old_print, "Output/Tables/IR_state_se.xlsx", showNA=F, append = T, row.names = F)
 write.xlsx(IR_year_old_print, "Output/Tables/IR_year_se.xlsx",  showNA=F, append = T, row.names = F)
 write.xlsx(PR_state_new_r_print, "Output/Tables/PR_state_se.xlsx",  showNA=F, append = T, row.names = F)
 write.xlsx(PR_year_new_r_print, "Output/Tables/PR_year_se.xlsx",  showNA=F, append = T, row.names = F)
+
+
+
+
+# Saving files ------------------------------------------------------------
+
+IR_save <- IR_state_new %>% 
+  mutate(IR = `new_case/at_risk` *1000,
+         IR_low = if_else(ci_l <0, 0, ci_l)*1000,
+         IR_up = ci_u *1000) %>% 
+  select(FIPS, IR, IR_low, IR_up)
+
+PR_save <- PR_state_new_r  %>%  
+  mutate(PR = `asthma/sample` *1000,
+         PR_low = if_else(ci_l <0, 0, ci_l)*1000,
+         PR_up = ci_u *1000) %>% 
+  select(FIPS, PR, PR_low, PR_up)
+
+
+
+# Saving to Astrhma_rate.RDS ----------------------------------------------
+
+
+
+# code using national average for missing states
+Asthma_rate <-  FIPS %>% 
+  left_join(IR_save, by = "FIPS") %>% 
+  left_join(PR_save, by = "FIPS") %>% 
+  mutate(IR = if_else(is.na(IR)|IR==Inf, 11.648097, IR),
+         IR_low = if_else(is.na(IR_low)|IR_low==Inf, 11.64643, IR_low),
+         IR_up = if_else(is.na(IR_up)|IR_up==Inf, 11.64976, IR_up),
+         PR = if_else(is.na(PR)|PR==Inf, 13.13306, PR),
+         PR_low = if_else(is.na(PR_low)|PR_low==Inf, 13.13278, PR_low),
+         PR_up = if_else(is.na(PR_up)|PR_up==Inf, 13.13334, PR_up)) 
+
+
+
+saveRDS(Asthma_rate, file = "Output/Asthma_rate.RDS" )
+saveRDS(IR_save, file = "Output/IR_save.RDS" )
+saveRDS(PR_save, file = "Output/PR_save.RDS" )
+
 
 
 
